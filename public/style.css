@@ -67,6 +67,7 @@ a { color: var(--primary); }
 .stat { flex: 1; }
 .stat-label { color: var(--muted); font-size: 13px; }
 .stat-value { font-size: 26px; font-weight: 700; }
+.stat-fronted { color: var(--ok); }
 
 .chart-row { display: flex; gap: 20px; align-items: flex-start; }
 .chart-row > .card { flex: 1; min-width: 0; }

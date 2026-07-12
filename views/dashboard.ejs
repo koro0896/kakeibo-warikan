@@ -4,7 +4,7 @@
 
 <div class="stat-row">
   <div class="card stat">
-    <div class="stat-label">今月の支出合計</div>
+    <div class="stat-label">今月の実質支出(自分の負担分)</div>
     <div class="stat-value"><%= yen(total) %></div>
   </div>
   <div class="card stat">
@@ -15,7 +15,14 @@
     <div class="stat-label">嗜好品</div>
     <div class="stat-value"><%= yen(optional) %></div>
   </div>
+  <% if (fronted > 0) { %>
+  <div class="card stat">
+    <div class="stat-label">立て替え中(送金で戻る予定)</div>
+    <div class="stat-value stat-fronted"><%= yen(fronted) %></div>
+  </div>
+  <% } %>
 </div>
+<p class="muted small">割り勘の支出は、送金で精算される分を除いた「自分の負担分」だけを集計しています。</p>
 
 <section class="card">
   <h2>今月の予算</h2>
