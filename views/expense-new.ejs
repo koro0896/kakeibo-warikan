@@ -1,0 +1,24 @@
+<%- include('partials/header') %>
+
+<section class="card">
+  <h1>支出を記録</h1>
+  <p class="muted">1行で書くと、金額・日付・カテゴリを自動で読み取ります(あとで修正できます)。</p>
+  <% if (error) { %><p class="alert alert-danger"><%= error %></p><% } %>
+  <form action="/expenses/parse" method="post" class="form">
+    <label class="field">
+      <span>何にいくら使った?</span>
+      <input type="text" name="text" placeholder="例: 今日コーラ(120円)買った" required autofocus class="input-lg">
+    </label>
+    <button type="submit" class="btn btn-primary">解析する</button>
+  </form>
+  <div class="examples">
+    <p class="muted small">書き方の例:</p>
+    <ul class="example-list">
+      <li>今日コーラ(120円)買った</li>
+      <li>昨日ランチ 850円</li>
+      <li>7月3日に電車で560円使った</li>
+    </ul>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,110 @@
+// 家計簿×割り勘 データモデル(要件見直しメモ v2 §3 のデータモデル案を直訳)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  grade        String   @default("") // 学年(例: 3年)
+  occupation   String   @default("") // 職業(高校生/大学生/大学院生/社会人/その他)
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  expenses       Expense[]
+  memberships    GroupMember[]
+  participations ExpenseParticipant[]
+  budgets        Budget[]
+
+  @@map("users")
+}
+
+model Category {
+  id                 Int     @id @default(autoincrement())
+  name               String  @unique
+  defaultIsEssential Boolean @map("default_is_essential") // 客観区分(必需=true)
+
+  keywords Keyword[]
+  expenses Expense[]
+
+  @@map("categories")
+}
+
+// 分類辞書。確認画面でカテゴリを手修正すると自動で語彙が増える(自己成長)
+model Keyword {
+  id         Int      @id @default(autoincrement())
+  word       String   @unique
+  categoryId Int      @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@map("keywords")
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id") // 支払った人
+  groupId     Int?     @map("group_id") // null = 個人支出
+  amount      Int // 円
+  categoryId  Int      @map("category_id")
+  isEssential Boolean  @map("is_essential") // 主観区分(カテゴリ既定値を上書き)
+  memo        String   @default("")
+  spentAt     DateTime @map("spent_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user         User                 @relation(fields: [userId], references: [id])
+  group        Group?               @relation(fields: [groupId], references: [id])
+  category     Category             @relation(fields: [categoryId], references: [id])
+  participants ExpenseParticipant[]
+
+  @@map("expenses")
+}
+
+model Group {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  members  GroupMember[]
+  expenses Expense[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  groupId Int   @map("group_id")
+  userId  Int   @map("user_id")
+  weight  Float @default(1.0) // 傾斜割り勘の比率(既定は均等 = 1.0)
+
+  group Group @relation(fields: [groupId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@id([groupId, userId])
+  @@map("group_members")
+}
+
+// この支出を誰で割るか
+model ExpenseParticipant {
+  expenseId Int @map("expense_id")
+  userId    Int @map("user_id")
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@id([expenseId, userId])
+  @@map("expense_participants")
+}
+
+model Budget {
+  userId Int    @map("user_id")
+  month  String // "YYYY-MM"
+  amount Int // 円
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([userId, month])
+  @@map("budgets")
+}

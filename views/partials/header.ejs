@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title><%= title %> | 家計簿×割り勘</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/destyle.css/4.0.1/destyle.min.css">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="<%= currentUser ? '/dashboard' : '/' %>">家計簿<span class="brand-x">×</span>割り勘</a>
+  <% if (currentUser) { %>
+    <nav class="nav">
+      <a href="/dashboard">ダッシュボード</a>
+      <a href="/expenses/new">支出を記録</a>
+      <a href="/expenses">支出一覧</a>
+      <a href="/groups">グループ</a>
+    </nav>
+    <div class="header-right">
+      <span class="user-name"><%= currentUser.name %> さん</span>
+      <form action="/logout" method="post">
+        <button type="submit" class="btn btn-ghost">ログアウト</button>
+      </form>
+    </div>
+  <% } %>
+</header>
+<main class="container">

@@ -1,0 +1,97 @@
+<%- include('partials/header') %>
+
+<section class="card">
+  <h1>内容を確認</h1>
+  <p class="muted">
+    「<%= parsed.memo %>」を解析しました。
+    <% if (parsed.matchedWord) { %>
+      (「<%= parsed.matchedWord %>」からカテゴリを推定)
+    <% } else { %>
+      (カテゴリを推定できなかったため「その他」にしています)
+    <% } %>
+    間違っていたら修正して確定してください。
+  </p>
+
+  <form action="/expenses" method="post" class="form">
+    <div class="field-row">
+      <label class="field">
+        <span>金額(円)</span>
+        <input type="number" name="amount" value="<%= parsed.amount ?? '' %>" min="1" required>
+      </label>
+      <label class="field">
+        <span>日付</span>
+        <input type="date" name="spentAt" value="<%= spentAtValue %>" required>
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span>カテゴリ</span>
+        <select name="categoryId">
+          <% categories.forEach((c) => { %>
+            <option value="<%= c.id %>" <%= c.id === parsed.categoryId ? 'selected' : '' %>><%= c.name %></option>
+          <% }) %>
+        </select>
+      </label>
+      <fieldset class="field">
+        <span>区分(主観で上書きOK)</span>
+        <div class="radio-row">
+          <label><input type="radio" name="isEssential" value="1" <%= parsed.isEssential ? 'checked' : '' %>> 生活必需</label>
+          <label><input type="radio" name="isEssential" value="0" <%= !parsed.isEssential ? 'checked' : '' %>> 嗜好品</label>
+        </div>
+      </fieldset>
+    </div>
+
+    <label class="field">
+      <span>メモ</span>
+      <input type="text" name="memo" value="<%= parsed.memo %>">
+    </label>
+
+    <label class="field">
+      <span>割り勘(グループ)</span>
+      <select name="groupId" id="group-select">
+        <option value="">個人支出(割り勘しない)</option>
+        <% groups.forEach((g) => { %>
+          <option value="<%= g.id %>"><%= g.name %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <% groups.forEach((g) => { %>
+      <fieldset class="field participants" data-group="<%= g.id %>" hidden>
+        <span>誰で割る?(<%= g.name %>)</span>
+        <div class="checkbox-row">
+          <% g.members.forEach((m) => { %>
+            <label>
+              <input type="checkbox" name="participants_<%= g.id %>" value="<%= m.userId %>" checked>
+              <%= m.user.name %>
+            </label>
+          <% }) %>
+        </div>
+      </fieldset>
+    <% }) %>
+
+    <!-- 分類辞書の自己成長用(カテゴリを手修正したら候補語を辞書に登録) -->
+    <input type="hidden" name="suggestedCategoryId" value="<%= parsed.categoryId %>">
+    <input type="hidden" name="keywordCandidate" value="<%= parsed.keywordCandidate || '' %>">
+
+    <div class="btn-row">
+      <button type="submit" class="btn btn-primary">この内容で記録する</button>
+      <a href="/expenses/new" class="btn btn-secondary">やり直す</a>
+    </div>
+  </form>
+</section>
+
+<script>
+  // グループ選択に応じて参加者チェックボックスを出し分ける(DOM操作のみ・fetch不使用)
+  const groupSelect = document.querySelector('#group-select');
+  const updateParticipants = () => {
+    document.querySelectorAll('.participants').forEach((el) => {
+      el.hidden = el.dataset.group !== groupSelect.value;
+    });
+  };
+  groupSelect.addEventListener('change', updateParticipants);
+  updateParticipants();
+</script>
+
+<%- include('partials/footer') %>

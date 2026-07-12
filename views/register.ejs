@@ -1,0 +1,39 @@
+<%- include('partials/header') %>
+
+<section class="card auth-card">
+  <h1>ユーザー登録</h1>
+  <% if (error) { %><p class="alert alert-danger"><%= error %></p><% } %>
+  <form action="/register" method="post" class="form">
+    <label class="field">
+      <span>名前</span>
+      <input type="text" name="name" value="<%= values.name || '' %>" required autofocus>
+    </label>
+    <label class="field">
+      <span>学年</span>
+      <select name="grade">
+        <option value="">選択しない</option>
+        <% grades.forEach((g) => { %>
+          <option value="<%= g %>" <%= values.grade === g ? 'selected' : '' %>><%= g %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label class="field">
+      <span>職業</span>
+      <select name="occupation">
+        <option value="">選択しない</option>
+        <% occupations.forEach((o) => { %>
+          <option value="<%= o %>" <%= values.occupation === o ? 'selected' : '' %>><%= o %></option>
+        <% }) %>
+      </select>
+      <span class="hint">職業は「職業プリセット割り勘」の比率に使われます</span>
+    </label>
+    <label class="field">
+      <span>パスワード(4文字以上)</span>
+      <input type="password" name="password" required minlength="4">
+    </label>
+    <button type="submit" class="btn btn-primary">登録してはじめる</button>
+  </form>
+  <p class="muted">アカウントがある場合は <a href="/">ログイン</a> へ</p>
+</section>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,139 @@
+<%- include('partials/header') %>
+
+<h1 class="page-title"><%= monthLabel %>のダッシュボード</h1>
+
+<div class="stat-row">
+  <div class="card stat">
+    <div class="stat-label">今月の支出合計</div>
+    <div class="stat-value"><%= yen(total) %></div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">生活必需</div>
+    <div class="stat-value"><%= yen(essential) %></div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">嗜好品</div>
+    <div class="stat-value"><%= yen(optional) %></div>
+  </div>
+</div>
+
+<section class="card">
+  <h2>今月の予算</h2>
+  <% if (budgetInfo) { %>
+    <% if (budgetInfo.level === 'danger') { %>
+      <p class="alert alert-danger">⚠️ 予算を超過しています!(<%= budgetInfo.rate %>%)</p>
+    <% } else if (budgetInfo.level === 'warn') { %>
+      <p class="alert alert-warn">⚠️ 予算の80%を超えました(<%= budgetInfo.rate %>%)。使いすぎに注意!</p>
+    <% } %>
+    <div class="budget-line">
+      <span><%= yen(total) %> / <%= yen(budgetInfo.amount) %>(消化率 <%= budgetInfo.rate %>%)</span>
+    </div>
+    <div class="budget-bar">
+      <div class="budget-bar-fill level-<%= budgetInfo.level %>" style="width: <%= budgetInfo.barWidth %>%"></div>
+    </div>
+  <% } else { %>
+    <p class="muted">今月の予算が未設定です。設定すると消化率と警告が表示されます。</p>
+  <% } %>
+  <form action="/budgets" method="post" class="form-inline">
+    <input type="number" name="amount" min="0" placeholder="例: 30000" value="<%= budgetInfo ? budgetInfo.amount : '' %>" required>
+    <button type="submit" class="btn btn-secondary">予算を設定</button>
+  </form>
+</section>
+
+<div class="chart-row">
+  <section class="card chart-card">
+    <h2>カテゴリ別支出割合</h2>
+    <% if (total > 0) { %>
+      <div class="chart-box"><canvas id="category-pie"></canvas></div>
+    <% } else { %>
+      <p class="muted">今月の支出がまだありません。</p>
+    <% } %>
+  </section>
+  <section class="card chart-card">
+    <h2>必需 / 嗜好の内訳</h2>
+    <% if (total > 0) { %>
+      <div class="chart-box"><canvas id="essential-pie"></canvas></div>
+    <% } else { %>
+      <p class="muted">今月の支出がまだありません。</p>
+    <% } %>
+  </section>
+</div>
+
+<div class="chart-row">
+  <section class="card">
+    <h2>先月(<%= prevMonthLabel %>)との比較</h2>
+    <% if (comparison.length === 0) { %>
+      <p class="muted">比較できるデータがまだありません。</p>
+    <% } else { %>
+      <table class="table">
+        <thead>
+          <tr><th>カテゴリ</th><th class="num">今月</th><th class="num">先月</th><th class="num">増減</th></tr>
+        </thead>
+        <tbody>
+          <% comparison.forEach((r) => { %>
+            <tr>
+              <td><%= r.name %></td>
+              <td class="num"><%= yen(r.current) %></td>
+              <td class="num"><%= yen(r.prev) %></td>
+              <td class="num <%= r.diff > 0 ? 'text-danger' : r.diff < 0 ? 'text-ok' : '' %>">
+                <%= r.diff > 0 ? '+' : '' %><%= yen(r.diff).replace('¥-', '-¥') %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>直近の支出</h2>
+      <a href="/expenses" class="link">すべて見る →</a>
+    </div>
+    <% if (recent.length === 0) { %>
+      <p class="muted">まだ支出がありません。</p>
+    <% } else { %>
+      <ul class="recent-list">
+        <% recent.forEach((e) => { %>
+          <li>
+            <span class="recent-date"><%= formatDate(e.spentAt) %></span>
+            <span class="recent-memo"><%= e.memo %></span>
+            <span class="tag"><%= e.category.name %></span>
+            <span class="recent-amount"><%= yen(e.amount) %></span>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+    <p><a href="/expenses/new" class="btn btn-primary">+ 支出を記録</a></p>
+  </section>
+</div>
+
+<% if (total > 0) { %>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  // サーバー側で集計済みのデータをEJSで埋め込む(fetch不使用)
+  const categoryChart = <%- JSON.stringify(categoryChart) %>;
+  const essentialData = { essential: <%= essential %>, optional: <%= optional %> };
+  const PALETTE = ['#4e79a7', '#f28e2b', '#59a14f', '#e15759', '#76b7b2', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac', '#86bcb6'];
+
+  new Chart(document.getElementById('category-pie'), {
+    type: 'pie',
+    data: {
+      labels: categoryChart.labels,
+      datasets: [{ data: categoryChart.data, backgroundColor: PALETTE }],
+    },
+    options: { plugins: { legend: { position: 'right' } } },
+  });
+
+  new Chart(document.getElementById('essential-pie'), {
+    type: 'doughnut',
+    data: {
+      labels: ['生活必需', '嗜好品'],
+      datasets: [{ data: [essentialData.essential, essentialData.optional], backgroundColor: ['#4e79a7', '#f28e2b'] }],
+    },
+    options: { plugins: { legend: { position: 'right' } } },
+  });
+</script>
+<% } %>
+
+<%- include('partials/footer') %>

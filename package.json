@@ -1,0 +1,26 @@
+{
+  "name": "kakeibo-warikan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "家計簿×割り勘 Webアプリ(Express + EJS + Prisma/SQLite + cookie-session)",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
+    "test": "node --test src/lib/"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.10.0",
+    "bcrypt": "^5.1.1",
+    "cookie-session": "^2.1.0",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "prisma": "^6.10.0"
+  }
+}

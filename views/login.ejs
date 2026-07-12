@@ -1,0 +1,21 @@
+<%- include('partials/header') %>
+
+<section class="card auth-card">
+  <h1>ログイン</h1>
+  <% if (error) { %><p class="alert alert-danger"><%= error %></p><% } %>
+  <form action="/login" method="post" class="form">
+    <label class="field">
+      <span>名前</span>
+      <input type="text" name="name" required autofocus>
+    </label>
+    <label class="field">
+      <span>パスワード</span>
+      <input type="password" name="password" required>
+    </label>
+    <button type="submit" class="btn btn-primary">ログイン</button>
+  </form>
+  <p class="muted">アカウントがない場合は <a href="/register">ユーザー登録</a> へ</p>
+  <p class="muted small">デモ用: たろう / はなこ / けんじ(パスワードはいずれも pass1234)</p>
+</section>
+
+<%- include('partials/footer') %>

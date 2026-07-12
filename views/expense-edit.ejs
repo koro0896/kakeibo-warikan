@@ -1,0 +1,47 @@
+<%- include('partials/header') %>
+
+<section class="card">
+  <h1>支出を編集</h1>
+  <form action="/expenses/<%= expense.id %>" method="post" class="form">
+    <div class="field-row">
+      <label class="field">
+        <span>金額(円)</span>
+        <input type="number" name="amount" value="<%= expense.amount %>" min="1" required>
+      </label>
+      <label class="field">
+        <span>日付</span>
+        <input type="date" name="spentAt" value="<%= spentAtValue %>" required>
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span>カテゴリ</span>
+        <select name="categoryId">
+          <% categories.forEach((c) => { %>
+            <option value="<%= c.id %>" <%= c.id === expense.categoryId ? 'selected' : '' %>><%= c.name %></option>
+          <% }) %>
+        </select>
+      </label>
+      <fieldset class="field">
+        <span>区分</span>
+        <div class="radio-row">
+          <label><input type="radio" name="isEssential" value="1" <%= expense.isEssential ? 'checked' : '' %>> 生活必需</label>
+          <label><input type="radio" name="isEssential" value="0" <%= !expense.isEssential ? 'checked' : '' %>> 嗜好品</label>
+        </div>
+      </fieldset>
+    </div>
+
+    <label class="field">
+      <span>メモ</span>
+      <input type="text" name="memo" value="<%= expense.memo %>">
+    </label>
+
+    <div class="btn-row">
+      <button type="submit" class="btn btn-primary">保存する</button>
+      <a href="/expenses" class="btn btn-secondary">キャンセル</a>
+    </div>
+  </form>
+</section>
+
+<%- include('partials/footer') %>

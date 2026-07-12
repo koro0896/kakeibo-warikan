@@ -1,0 +1,101 @@
+<%- include('partials/header') %>
+
+<h1 class="page-title">グループ: <%= group.name %></h1>
+<% if (error) { %><p class="alert alert-danger"><%= error %></p><% } %>
+
+<div class="chart-row">
+  <section class="card">
+    <h2>メンバーと比率(weight)</h2>
+    <form action="/groups/<%= group.id %>/weights" method="post">
+      <table class="table">
+        <thead>
+          <tr><th>名前</th><th>学年</th><th>職業</th><th class="num">weight</th></tr>
+        </thead>
+        <tbody>
+          <% group.members.forEach((m) => { %>
+            <tr>
+              <td><%= m.user.name %></td>
+              <td><%= m.user.grade || '—' %></td>
+              <td><%= m.user.occupation || '—' %></td>
+              <td class="num">
+                <input class="weight-input" type="number" name="weight_<%= m.userId %>" value="<%= m.weight %>" step="0.1" min="0.1">
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">手動比率を保存</button>
+        <button type="submit" name="preset" value="equal" class="btn btn-secondary">均等に戻す</button>
+        <button type="submit" name="preset" value="occupation" class="btn btn-secondary">職業プリセット</button>
+      </div>
+      <p class="hint">職業プリセット: 社会人 1.5 / 大学院生 1.2 / 大学生 1.0 / 高校生 0.8</p>
+    </form>
+
+    <h3>メンバーを追加</h3>
+    <form action="/groups/<%= group.id %>/members" method="post" class="form-inline">
+      <input type="text" name="name" placeholder="ユーザー名で追加" required>
+      <button type="submit" class="btn btn-secondary">追加</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>精算</h2>
+    <% if (balanceRows.every((r) => r.balance === 0)) { %>
+      <p class="muted">精算が必要な支出はありません(グループ支出を記録すると、ここに精算額が出ます)。</p>
+    <% } else { %>
+      <table class="table">
+        <thead>
+          <tr><th>名前</th><th class="num">収支</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% balanceRows.forEach((r) => { %>
+            <tr>
+              <td><%= r.name %></td>
+              <td class="num <%= r.balance > 0 ? 'text-ok' : r.balance < 0 ? 'text-danger' : '' %>">
+                <%= r.balance > 0 ? '+' : '' %><%= yen(r.balance).replace('¥-', '-¥') %>
+              </td>
+              <td><%= r.balance > 0 ? '受け取る' : r.balance < 0 ? '支払う' : '—' %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <h3>送金案(回数最小化)</h3>
+      <ul class="transfer-list">
+        <% transfers.forEach((t) => { %>
+          <li><strong><%= t.from %></strong> → <strong><%= t.to %></strong> に <span class="recent-amount"><%= yen(t.amount) %></span></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+</div>
+
+<section class="card">
+  <h2>このグループの支出</h2>
+  <p class="muted">支出の記録は「<a href="/expenses/new">支出を記録</a>」から。確認画面でこのグループと参加者を選ぶとここに載ります。</p>
+  <% if (group.expenses.length === 0) { %>
+    <p class="muted">まだグループの支出がありません。</p>
+  <% } else { %>
+    <table class="table">
+      <thead>
+        <tr><th>いつ</th><th>何に</th><th>カテゴリ</th><th class="num">いくら</th><th>誰が払った</th><th>誰で割る</th></tr>
+      </thead>
+      <tbody>
+        <% const memberName = new Map(group.members.map((m) => [m.userId, m.user.name])); %>
+        <% group.expenses.forEach((e) => { %>
+          <tr>
+            <td><%= formatDate(e.spentAt) %></td>
+            <td class="memo-cell"><%= e.memo %></td>
+            <td><span class="tag"><%= e.category.name %></span></td>
+            <td class="num"><%= yen(e.amount) %></td>
+            <td><%= e.user.name %></td>
+            <td><%= e.participants.map((p) => memberName.get(p.userId) ?? '不明').join('、') %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+<%- include('partials/footer') %>
