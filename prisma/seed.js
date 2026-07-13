@@ -166,7 +166,111 @@ async function main() {
     });
   }
 
-  console.log('✅ seed 完了(デモユーザー: たろう / はなこ / けんじ、パスワード: pass1234)');
+  // 5. KOROユーザー(本人が引き継いで使うアカウント)+ 直近5ヶ月の支出データ
+  const now2 = new Date();
+  const koro = await prisma.user.upsert({
+    where: { name: 'KORO' },
+    update: {},
+    create: { name: 'KORO', grade: '4年', occupation: '大学生', passwordHash },
+  });
+
+  const koroExpenseCount = await prisma.expense.count({ where: { userId: koro.id } });
+  if (koroExpenseCount === 0) {
+    // 月ごとの支出パターン。配列のインデックス = 何ヶ月前か(0 = 今月)
+    // [日, 金額, カテゴリ, 必需?, メモ]
+    const KORO_MONTHS = [
+      [
+        // 今月
+        [1, 1200, '日用品', true, '洗剤とティッシュ(1200円)'],
+        [2, 850, '食費', true, '学食でランチ 850円'],
+        [4, 560, '交通費', true, '電車代 560円'],
+        [5, 1980, '通信費', true, 'スマホ代 1980円'],
+        [6, 1500, '趣味・娯楽', false, '映画(1500円)'],
+        [8, 2400, '食費', true, 'スーパーで食材 2400円'],
+        [10, 3200, '交際費', false, '飲み会 3200円'],
+        [12, 480, '食費', false, 'カフェ 480円'],
+      ],
+      [
+        // 1ヶ月前
+        [3, 2600, '食費', true, 'スーパーで食材 2600円'],
+        [5, 1980, '通信費', true, 'スマホ代 1980円'],
+        [7, 1100, '日用品', true, 'シャンプーと歯磨き粉 1100円'],
+        [9, 860, '交通費', true, '電車代 860円'],
+        [12, 3400, '衣服・美容', false, 'Tシャツ 3400円'],
+        [15, 2200, '食費', true, 'スーパーで食材 2200円'],
+        [18, 1500, '趣味・娯楽', false, 'カラオケ 1500円'],
+        [21, 2800, '交際費', false, '飲み会 2800円'],
+        [24, 900, '食費', false, 'スイーツ食べ歩き 900円'],
+        [27, 1300, '教育・書籍', true, '参考書 1300円'],
+      ],
+      [
+        // 2ヶ月前
+        [2, 2400, '食費', true, 'スーパーで食材 2400円'],
+        [5, 1980, '通信費', true, 'スマホ代 1980円'],
+        [8, 1500, '医療・保険', true, '皮膚科の診察 1500円'],
+        [10, 720, '交通費', true, 'バス代 720円'],
+        [14, 4200, '趣味・娯楽', false, 'ゲームソフト 4200円'],
+        [17, 2100, '食費', true, 'スーパーで食材 2100円'],
+        [20, 1800, '交際費', false, 'カラオケ 1800円'],
+        [25, 1000, '日用品', true, 'ドラッグストア 1000円'],
+        [28, 1600, '衣服・美容', false, '散髪 1600円'],
+      ],
+      [
+        // 3ヶ月前
+        [1, 3000, '教育・書籍', true, '新学期の教科書 3000円'],
+        [4, 1980, '通信費', true, 'スマホ代 1980円'],
+        [6, 2500, '食費', true, 'スーパーで食材 2500円'],
+        [9, 5000, '交通費', true, '定期券の更新 5000円'],
+        [13, 2000, '交際費', false, '新歓 2000円'],
+        [16, 1900, '食費', true, 'スーパーで食材 1900円'],
+        [19, 2600, '趣味・娯楽', false, '映画とゲームセンター 2600円'],
+        [23, 800, '日用品', true, 'ティッシュと電池 800円'],
+        [26, 1200, '食費', false, 'タピオカとお菓子 1200円'],
+      ],
+      [
+        // 4ヶ月前
+        [2, 2300, '食費', true, 'スーパーで食材 2300円'],
+        [5, 1980, '通信費', true, 'スマホ代 1980円'],
+        [8, 950, '日用品', true, '洗剤 950円'],
+        [11, 680, '交通費', true, '電車代 680円'],
+        [14, 3500, '交際費', false, '追いコン 3500円'],
+        [18, 2000, '食費', true, 'スーパーで食材 2000円'],
+        [22, 2980, '趣味・娯楽', false, '漫画まとめ買い 2980円'],
+        [26, 1400, '衣服・美容', false, '古着 1400円'],
+      ],
+    ];
+
+    for (let offset = 0; offset < KORO_MONTHS.length; offset++) {
+      for (const [dayOfMonth, amount, cat, ess, memo] of KORO_MONTHS[offset]) {
+        const spentAt = new Date(now2.getFullYear(), now2.getMonth() - offset, dayOfMonth);
+        if (spentAt > now2) continue; // 今月の未来日はスキップ
+        await prisma.expense.create({
+          data: {
+            userId: koro.id,
+            amount,
+            categoryId: catId[cat],
+            isEssential: ess,
+            memo,
+            spentAt,
+          },
+        });
+      }
+    }
+
+    // 今月の予算: 生活必需 10,000円 + 嗜好品 10,000円(合計は自動計算で 20,000円)
+    await prisma.budget.upsert({
+      where: { userId_month: { userId: koro.id, month: monthKey(now2) } },
+      update: { essentialAmount: 10000, optionalAmount: 10000 },
+      create: {
+        userId: koro.id,
+        month: monthKey(now2),
+        essentialAmount: 10000,
+        optionalAmount: 10000,
+      },
+    });
+  }
+
+  console.log('✅ seed 完了(デモユーザー: たろう / はなこ / けんじ / KORO、パスワード: pass1234)');
 }
 
 main()
