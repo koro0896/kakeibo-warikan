@@ -102,15 +102,26 @@ router.get(
       .filter((r) => r.current > 0 || r.prev > 0)
       .map((r) => ({ ...r, diff: r.current - r.prev }));
 
-    // 予算消化率(Should 6)— 実質支出ベース
-    let budgetInfo = null;
-    if (budget && budget.amount > 0) {
-      const rate = Math.round((total / budget.amount) * 100);
-      budgetInfo = {
-        amount: budget.amount,
+    // 予算消化率(Should 6)— 実質支出ベース・区分別(生活必需/嗜好品)+合計は自動計算
+    const makeBar = (spent, amount) => {
+      if (!amount || amount <= 0) return null; // その区分の予算が未設定なら表示しない
+      const rate = Math.round((spent / amount) * 100);
+      return {
+        amount,
         rate,
         barWidth: Math.min(rate, 100),
         level: rate >= 100 ? 'danger' : rate >= 80 ? 'warn' : 'ok',
+      };
+    };
+    let budgetInfo = null;
+    if (budget && budget.essentialAmount + budget.optionalAmount > 0) {
+      budgetInfo = {
+        essentialAmount: budget.essentialAmount,
+        optionalAmount: budget.optionalAmount,
+        essential: makeBar(essential, budget.essentialAmount),
+        optional: makeBar(optional, budget.optionalAmount),
+        // 合計予算 = 生活必需 + 嗜好品(自動計算)
+        total: makeBar(total, budget.essentialAmount + budget.optionalAmount),
       };
     }
 
@@ -130,17 +141,19 @@ router.get(
   })
 );
 
-// 当月予算の設定(upsert)
+// 当月予算の設定(区分別に upsert。合計は保存せず表示時に自動計算)
 router.post(
   '/budgets',
   wrap(async (req, res) => {
-    const amount = Number(req.body.amount);
-    if (Number.isInteger(amount) && amount >= 0) {
+    const essentialAmount = Number(req.body.essentialAmount);
+    const optionalAmount = Number(req.body.optionalAmount);
+    const valid = (n) => Number.isInteger(n) && n >= 0;
+    if (valid(essentialAmount) && valid(optionalAmount)) {
       const month = monthKey(new Date());
       await prisma.budget.upsert({
         where: { userId_month: { userId: req.session.userId, month } },
-        update: { amount },
-        create: { userId: req.session.userId, month, amount },
+        update: { essentialAmount, optionalAmount },
+        create: { userId: req.session.userId, month, essentialAmount, optionalAmount },
       });
     }
     res.redirect('/dashboard');

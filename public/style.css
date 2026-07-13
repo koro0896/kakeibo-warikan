@@ -100,6 +100,9 @@ input[type="radio"], input[type="checkbox"] { width: 16px; height: 16px; accent-
 
 .form-inline { display: flex; gap: 10px; margin: 12px 0; }
 .form-inline input { flex: 0 1 260px; }
+.budget-form { align-items: flex-end; }
+.budget-form .field { flex: 0 1 200px; }
+.budget-form .field input { width: 100%; }
 
 /* ---------- ボタン ---------- */
 .btn {

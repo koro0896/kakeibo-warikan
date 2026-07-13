@@ -98,10 +98,12 @@ model ExpenseParticipant {
   @@map("expense_participants")
 }
 
+// 予算は区分(生活必需/嗜好品)ごとに設定し、合計は2つの和として自動計算する
 model Budget {
-  userId Int    @map("user_id")
-  month  String // "YYYY-MM"
-  amount Int // 円
+  userId          Int    @map("user_id")
+  month           String // "YYYY-MM"
+  essentialAmount Int    @default(0) @map("essential_amount") // 生活必需の予算(円)
+  optionalAmount  Int    @default(0) @map("optional_amount") // 嗜好品の予算(円)
 
   user User @relation(fields: [userId], references: [id])
 

@@ -25,24 +25,42 @@
 <p class="muted small">割り勘の支出は、送金で精算される分を除いた「自分の負担分」だけを集計しています。</p>
 
 <section class="card">
-  <h2>今月の予算</h2>
+  <h2>今月の予算(区分別)</h2>
   <% if (budgetInfo) { %>
-    <% if (budgetInfo.level === 'danger') { %>
-      <p class="alert alert-danger">⚠️ 予算を超過しています!(<%= budgetInfo.rate %>%)</p>
-    <% } else if (budgetInfo.level === 'warn') { %>
-      <p class="alert alert-warn">⚠️ 予算の80%を超えました(<%= budgetInfo.rate %>%)。使いすぎに注意!</p>
-    <% } %>
-    <div class="budget-line">
-      <span><%= yen(total) %> / <%= yen(budgetInfo.amount) %>(消化率 <%= budgetInfo.rate %>%)</span>
-    </div>
-    <div class="budget-bar">
-      <div class="budget-bar-fill level-<%= budgetInfo.level %>" style="width: <%= budgetInfo.barWidth %>%"></div>
-    </div>
+    <%
+      // 表示する予算バー: 合計(自動計算)+ 区分別
+      const budgetRows = [
+        { label: '合計', note: '(必需+嗜好から自動計算)', spent: total, bar: budgetInfo.total },
+        { label: '生活必需', note: '', spent: essential, bar: budgetInfo.essential },
+        { label: '嗜好品', note: '', spent: optional, bar: budgetInfo.optional },
+      ];
+    %>
+    <% budgetRows.forEach((r) => { if (!r.bar) return; %>
+      <% if (r.bar.level === 'danger') { %>
+        <p class="alert alert-danger">⚠️ <%= r.label %>の予算を超過しています!(<%= r.bar.rate %>%)</p>
+      <% } else if (r.bar.level === 'warn') { %>
+        <p class="alert alert-warn">⚠️ <%= r.label %>の予算の80%を超えました(<%= r.bar.rate %>%)。使いすぎに注意!</p>
+      <% } %>
+      <div class="budget-line">
+        <span><strong><%= r.label %></strong><span class="muted small"><%= r.note %></span>:
+          <%= yen(r.spent) %> / <%= yen(r.bar.amount) %>(消化率 <%= r.bar.rate %>%)</span>
+      </div>
+      <div class="budget-bar">
+        <div class="budget-bar-fill level-<%= r.bar.level %>" style="width: <%= r.bar.barWidth %>%"></div>
+      </div>
+    <% }) %>
   <% } else { %>
-    <p class="muted">今月の予算が未設定です。設定すると消化率と警告が表示されます。</p>
+    <p class="muted">今月の予算が未設定です。生活必需・嗜好品に分けて設定すると、合計予算(自動計算)と消化率・警告が表示されます。</p>
   <% } %>
-  <form action="/budgets" method="post" class="form-inline">
-    <input type="number" name="amount" min="0" placeholder="例: 30000" value="<%= budgetInfo ? budgetInfo.amount : '' %>" required>
+  <form action="/budgets" method="post" class="form-inline budget-form">
+    <label class="field">
+      <span>生活必需の予算(円)</span>
+      <input type="number" name="essentialAmount" min="0" placeholder="例: 20000" value="<%= budgetInfo ? budgetInfo.essentialAmount : '' %>" required>
+    </label>
+    <label class="field">
+      <span>嗜好品の予算(円)</span>
+      <input type="number" name="optionalAmount" min="0" placeholder="例: 10000" value="<%= budgetInfo ? budgetInfo.optionalAmount : '' %>" required>
+    </label>
     <button type="submit" class="btn btn-secondary">予算を設定</button>
   </form>
 </section>

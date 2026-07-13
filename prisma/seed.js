@@ -153,11 +153,16 @@ async function main() {
       });
     }
 
-    // 今月の予算(たろう)
+    // 今月の予算(たろう): 生活必需 20,000円 + 嗜好品 10,000円(合計は自動計算で 30,000円)
     await prisma.budget.upsert({
       where: { userId_month: { userId: taro, month: monthKey(now) } },
       update: {},
-      create: { userId: taro, month: monthKey(now), amount: 30000 },
+      create: {
+        userId: taro,
+        month: monthKey(now),
+        essentialAmount: 20000,
+        optionalAmount: 10000,
+      },
     });
   }
 
